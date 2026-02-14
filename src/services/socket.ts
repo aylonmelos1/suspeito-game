@@ -43,6 +43,9 @@ export class SocketService {
 
         log.info(`👤 Join request: ${nickname} (userId: ${finalUserId}, socketId: ${socket.id}) -> room ${code}`);
 
+        // Limpar fantasmas antes de adicionar o novo
+        await this.pruneInactivePlayers(code);
+
         // Get Room or Create
         let roomData = await StorageService.getRoom(code);
         if (!roomData) {
@@ -163,6 +166,39 @@ export class SocketService {
             roomData.last_updated = Date.now();
             StorageService.saveRoom(roomCode, roomData);
             log.info(`🏠 Room ${roomCode} now has ${roomData.players.length} players`);
+        }
+    }
+
+    /**
+     * Remove jogadores cujo socketId não está mais conectado no server.
+     * Útil para limpar "fantasmas" que o evento disconnect não pegou (crash, restart).
+     */
+    private static async pruneInactivePlayers(roomCode: string) {
+        const roomData = await StorageService.getRoom(roomCode);
+        if (!roomData || !roomData.players) return;
+
+        const initialCount = roomData.players.length;
+        const activeSockets = await this.io.in(roomCode).fetchSockets();
+        const activeSocketIds = new Set(activeSockets.map(s => s.id));
+
+        roomData.players = roomData.players.filter((p: Player) => {
+            // Se o socketID do player não está na lista de sockets ativos da sala, remove
+            // Mas cuidado: se ele acabou de entrar, ele deve estar na lista.
+            // O fetchSockets() retorna os sockets conectados.
+            return activeSocketIds.has(p.id);
+        });
+
+        if (roomData.players.length !== initialCount) {
+            log.info(`🧹 Pruned ${initialCount - roomData.players.length} ghost players from room ${roomCode}`);
+            roomData.last_updated = Date.now();
+            StorageService.saveRoom(roomCode, roomData);
+
+            // Atualizar quem sobrou
+            this.io.to(roomCode).emit('room_joined', {
+                roomCode: roomCode,
+                playerCount: roomData.players.length,
+                mode: 'PUBLIC' // Simplificação, idealmente preservaria o modo do user
+            });
         }
     }
 }

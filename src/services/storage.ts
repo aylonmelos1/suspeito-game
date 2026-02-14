@@ -47,6 +47,8 @@ export class StorageService {
             for (const row of rooms) {
                 try {
                     const data = JSON.parse(row.data);
+                    // IMPORTANTE: Limpar jogadores ao iniciar, pois sockets são efêmeros
+                    data.players = [];
                     this.cache.set(`room:${row.code}`, data);
                     count++;
                 } catch (e) {
