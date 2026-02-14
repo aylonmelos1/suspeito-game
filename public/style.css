@@ -1150,3 +1150,53 @@ main#game-lists {
         transform: translateY(-10px);
     }
 }
+
+/* ===================================== */
+/*         PWA INSTALL BUTTON            */
+/* ===================================== */
+
+.pwa-install-btn {
+    background: linear-gradient(135deg, var(--gold), #b8860b);
+    color: #0b1021;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    margin: 25px auto 0;
+    display: block;
+    width: fit-content;
+    animation: fadeInUp 1s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.pwa-install-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: 0.5s;
+}
+
+.pwa-install-btn:hover::before {
+    left: 100%;
+}
+
+.pwa-install-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+}
+
+.pwa-install-btn:active {
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}

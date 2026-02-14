@@ -1,6 +1,12 @@
 {
     "name": "Suspeito Notes",
     "short_name": "Suspeito",
+    "description": "Jogo de dedução e mistério multiplayer.",
+    "categories": [
+        "games",
+        "entertainment",
+        "social"
+    ],
     "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#1a1a2e",

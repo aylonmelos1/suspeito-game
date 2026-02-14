@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0b1021">
+    <meta name="theme-color" content="#16213e">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="description"
         content="Jogue Suspeito, um jogo de dedução e mistério multiplayer em tempo real. Descubra o culpado, a arma e o local do crime. Disponível offline e como PWA.">
     <meta name="keywords"
@@ -63,6 +64,11 @@
                     <div class="mode-card-glow"></div>
                 </div>
             </div>
+
+            <!-- Botão de Instalar PWA (Oculto por padrão) -->
+            <button id="pwa-install-btn" class="pwa-install-btn" style="display: none;">
+                📲 Instalar App
+            </button>
         </div>
 
         <!-- Popup "Com Amigos" -->
@@ -184,6 +190,40 @@
                 .then(reg => console.log('SW registrado!', reg))
                 .catch(err => console.error('Erro SW:', err));
         }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Previne o Chrome de mostrar o prompt nativo imediatamente
+            e.preventDefault();
+            // Guarda o evento para disparar depois
+            deferredPrompt = e;
+            // Mostra o botão
+            installBtn.style.display = 'block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Mostra o prompt nativo
+                deferredPrompt.prompt();
+                // Espera a escolha do usuário
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                // Limpa a variável
+                deferredPrompt = null;
+                // Esconde o botão
+                installBtn.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Esconde o botão se o app for instalado
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
     </script>
 </body>
 
