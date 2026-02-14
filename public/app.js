@@ -91,6 +91,15 @@ const app = {
 
     init() {
         console.log('[INIT] Iniciando app...');
+
+        // Verificar versão ANTES de tudo
+        this.checkVersion().then(shouldReload => {
+            if (shouldReload) return; // Vai recarregar, não faz mais nada
+            this._startApp();
+        });
+    },
+
+    _startApp() {
         // Ler modo do localStorage (definido pelo lobby/index.html)
         this.gameMode = localStorage.getItem('suspeito_game_mode') || 'offline';
         console.log('[INIT] Modo de jogo:', this.gameMode);
@@ -125,6 +134,52 @@ const app = {
                 }
             })).catch(e => console.error('[INIT] Erro:', e));
         }).catch(e => console.error('[INIT] Erro ao carregar dados:', e));
+    },
+
+    async checkVersion() {
+        try {
+            const response = await fetch('/api/version', { cache: 'no-store' });
+            if (!response.ok) return false;
+
+            const { version } = await response.json();
+            const savedVersion = localStorage.getItem('suspeito_app_version');
+            console.log('[VERSION] Servidor:', version, '| Local:', savedVersion);
+
+            if (savedVersion && savedVersion !== version) {
+                console.log('[VERSION] ⚠️ Nova versão detectada! Atualizando...');
+
+                // 1. Desregistrar Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const reg of registrations) {
+                        await reg.unregister();
+                        console.log('[VERSION] SW desregistrado');
+                    }
+                }
+
+                // 2. Limpar todos os caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const name of cacheNames) {
+                        await caches.delete(name);
+                        console.log('[VERSION] Cache deletado:', name);
+                    }
+                }
+
+                // 3. Salvar nova versão e recarregar
+                localStorage.setItem('suspeito_app_version', version);
+                console.log('[VERSION] Recarregando...');
+                window.location.reload();
+                return true;
+            }
+
+            // Salvar versão (primeira vez ou mesma versão)
+            localStorage.setItem('suspeito_app_version', version);
+            return false;
+        } catch (e) {
+            console.warn('[VERSION] Erro ao verificar versão (offline?):', e);
+            return false;
+        }
     },
 
     // Auto-entrar na sala usando dados do localStorage (definidos no lobby)

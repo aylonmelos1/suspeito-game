@@ -56,7 +56,7 @@ export class VersioningService {
         const appHash = this.assetHashes.get('app.js');
         if (appHash) {
             modifiedHtml = modifiedHtml.replace(
-                'src="app.js"',
+                /src="app\.js(\?v=[^"]*)?"/,
                 `src="app.js?v=${appHash}"`
             );
         }
@@ -65,11 +65,20 @@ export class VersioningService {
         const styleHash = this.assetHashes.get('style.css');
         if (styleHash) {
             modifiedHtml = modifiedHtml.replace(
-                'href="style.css"',
+                /href="style\.css(\?v=[^"]*)?"/,
                 `href="style.css?v=${styleHash}"`
             );
         }
 
         return modifiedHtml;
+    }
+
+    /**
+     * Retorna uma versão global da app (hash combinado de todos os assets)
+     */
+    static getAppVersion(): string {
+        const allHashes = Array.from(this.assetHashes.values()).sort().join('');
+        const crypto = require('crypto');
+        return crypto.createHash('md5').update(allHashes).digest('hex').slice(0, 8);
     }
 }
