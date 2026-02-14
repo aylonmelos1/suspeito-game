@@ -89,6 +89,14 @@ const app = {
         nickname: ''
     },
 
+    // Timer
+    timerInterval: null,
+    timerState: {
+        running: false,
+        start: null,
+        elapsed: 0
+    },
+
     init() {
         console.log('[INIT] Iniciando app...');
 
@@ -258,8 +266,62 @@ const app = {
         this.socket.on('room_joined', (data) => {
             console.log('[SOCKET] Entrou na sala:', data);
             this.currentRoom = data.roomCode;
+
+            if (data.timerState) {
+                this.syncTimer(data.timerState);
+            }
+
             this.showToast(`Entrou na sala ${data.roomCode} (${data.mode})`, 'success');
         });
+
+        this.socket.on('timer_sync', (state) => {
+            console.log('[SOCKET] Timer sync:', state);
+            this.syncTimer(state);
+        });
+    },
+
+    syncTimer(state) {
+        this.timerState = state;
+        this.renderTimer();
+
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
+        if (state.running) {
+            this.timerInterval = setInterval(() => this.renderTimer(), 1000);
+        }
+    },
+
+    renderTimer() {
+        const timerEl = document.getElementById('game-timer');
+        if (!timerEl) return;
+
+        let totalSeconds = Math.floor(this.timerState.elapsed / 1000);
+
+        if (this.timerState.running && this.timerState.start) {
+            const currentSession = Math.floor((Date.now() - this.timerState.start) / 1000);
+            totalSeconds += currentSession;
+        }
+
+        const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+        const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${minutes}:${seconds}`;
+
+        // Visual feedback if running
+        if (this.timerState.running) {
+            timerEl.classList.add('running');
+        } else {
+            timerEl.classList.remove('running');
+        }
+    },
+
+    toggleTimer() {
+        if (!this.socket || !this.currentRoom) return;
+        if (navigator.vibrate) navigator.vibrate(20);
+        this.socket.emit('timer_toggle');
+    },
+
+    startTimer(startTime) {
+        // Deprecated in favor of syncTimer
     },
 
     emitGameAction(action, detail) {
@@ -612,6 +674,9 @@ const app = {
             console.log('[LEAVE] Desconectando socket...');
             this.socket.disconnect();
         }
+
+        if (this.timerInterval) clearInterval(this.timerInterval);
+
         console.log('[LEAVE] Redirecionando para /...');
         window.location.href = '/';
     },
@@ -634,6 +699,12 @@ const app = {
             };
             console.log('[RESET] State resetado:', JSON.stringify(this.state));
             this.emitGameAction('resetou', 'o jogo');
+
+            // Zerar timer se conectado
+            if (this.socket && this.currentRoom) {
+                this.socket.emit('timer_reset');
+            }
+
             this.saveState();
             console.log('[RESET] State salvo');
         } catch (e) {

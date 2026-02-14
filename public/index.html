@@ -88,8 +88,14 @@
 
                     <div class="input-group">
                         <label for="popup-room-code">Código da sala</label>
-                        <input type="text" id="popup-room-code" placeholder="Ex: A1B2" maxlength="6" autocomplete="off"
-                            style="text-transform: uppercase;">
+                        <div class="input-wrapper">
+                            <input type="text" id="popup-room-code" placeholder="Ex: A1B2" maxlength="6"
+                                autocomplete="off" style="text-transform: uppercase;">
+                            <button type="button" class="btn-generate-code" onclick="lobby.generateRoomCode()"
+                                title="Gerar código aleatório">
+                                🎲
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Slider Toggle -->
@@ -173,6 +179,40 @@
                 localStorage.setItem('suspeito_spy_mode', isSpyMode ? 'true' : 'false');
 
                 window.location.href = '/app';
+            },
+
+            async generateRoomCode() {
+                const btn = document.querySelector('.btn-generate-code');
+                const originalText = btn.innerHTML;
+
+                try {
+                    // Loading state
+                    btn.innerHTML = '⏳';
+                    btn.disabled = true;
+                    btn.style.cursor = 'wait';
+
+                    const response = await fetch('/api/room', { method: 'POST' });
+                    if (!response.ok) throw new Error('Erro ao gerar');
+
+                    const data = await response.json();
+
+                    const input = document.getElementById('popup-room-code');
+                    input.value = data.code;
+
+                    // Feedback visual
+                    input.style.borderColor = 'var(--gold)';
+                    setTimeout(() => {
+                        input.style.borderColor = '';
+                    }, 300);
+
+                } catch (error) {
+                    console.error(error);
+                    this.showToast('Erro ao gerar sala. Tente novamente.');
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.cursor = 'pointer';
+                }
             }
         };
 

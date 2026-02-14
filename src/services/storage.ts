@@ -13,6 +13,10 @@ export interface RoomData {
     code: string;
     players: any[]; // We store the full player array/map as JSON
     last_updated: number;
+    status: 'ONLINE' | 'OFFLINE';
+    timer_running?: boolean;
+    timer_start?: number | null;
+    timer_elapsed?: number;
 }
 
 export class StorageService {
@@ -49,6 +53,8 @@ export class StorageService {
                     const data = JSON.parse(row.data);
                     // IMPORTANTE: Limpar jogadores ao iniciar, pois sockets são efêmeros
                     data.players = [];
+                    // Reset status to OFFLINE on startup
+                    data.status = 'OFFLINE';
                     this.cache.set(`room:${row.code}`, data);
                     count++;
                 } catch (e) {
@@ -119,5 +125,56 @@ export class StorageService {
         if (this.db) {
             await this.db.run('DELETE FROM rooms WHERE code = ?', roomCode);
         }
+    }
+
+    /**
+     * Generate a unique room code
+     * If an existing room is OFFLINE (active but empty), reuse it by clearing it.
+     */
+    static async generateUniqueRoomCode(): Promise<string> {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        let found = false;
+
+        // Tentar até 10 vezes para evitar loop infinito
+        for (let attempt = 0; attempt < 10; attempt++) {
+            code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            const room = await this.getRoom(code);
+
+            // 1. Sala não existe -> Perfeito, usar este código
+            if (!room) {
+                found = true;
+                break;
+            }
+
+            // 2. Sala existe mas está OFFLINE ou VAZIA -> Reutilizar
+            // Garantimos que não tem jogadores para evitar conflitos de "fantasma"
+            if ((room.status === 'OFFLINE') || (room.players && room.players.length === 0)) {
+                log.info(`♻️ Reusing OFFLINE room ${code}`);
+                // Resetar a sala para garantir estado limpo
+                room.players = [];
+                room.status = 'ONLINE'; // Marca como online preventivamente (será confirmado no join)
+                room.last_updated = Date.now();
+                room.timer_running = false;
+                room.timer_start = null;
+                room.timer_elapsed = 0;
+                this.saveRoom(code, room);
+                found = true;
+                break;
+            }
+
+            // 3. Sala existe e está ONLINE -> Tentar outro código
+            log.debug(`⚠️ Collision with ONLINE room ${code}, retrying...`);
+        }
+
+        if (!found) {
+            throw new Error('Não foi possível gerar um código de sala único.');
+        }
+
+        return code;
     }
 }

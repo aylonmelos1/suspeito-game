@@ -319,6 +319,44 @@ body {
     color: #4a5568;
 }
 
+.input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-wrapper input[type="text"] {
+    flex: 1;
+}
+
+.btn-generate-code {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 10px;
+    width: 46px;
+    /* Matches input height padding + font-size approx */
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    line-height: 1;
+}
+
+.btn-generate-code:hover {
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+.btn-generate-code:active {
+    transform: scale(0.95);
+}
+
 /* ===================================== */
 /*         SLIDER TOGGLE                 */
 /* ===================================== */
@@ -458,6 +496,34 @@ body {
     letter-spacing: 3px;
     text-transform: uppercase;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.game-timer {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: #8a9bbd;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 10px;
+    border-radius: 12px;
+    letter-spacing: 1px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.game-timer:active {
+    transform: scale(0.95);
+}
+
+.game-timer.running {
+    border-color: rgba(76, 175, 80, 0.5);
+    color: #e0e0e0;
+    background: rgba(76, 175, 80, 0.1);
 }
 
 .guess-slots {

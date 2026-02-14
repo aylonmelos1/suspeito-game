@@ -30,6 +30,14 @@ export class SocketService {
                 this.handleGameAction(socket, data);
             });
 
+            socket.on('timer_toggle', () => {
+                this.handleTimerToggle(socket);
+            });
+
+            socket.on('timer_reset', () => {
+                this.handleTimerReset(socket);
+            });
+
             socket.on('disconnect', () => {
                 this.handleDisconnect(socket);
             });
@@ -52,9 +60,23 @@ export class SocketService {
             roomData = {
                 code,
                 players: [],
-                last_updated: Date.now()
+                last_updated: Date.now(),
+                status: 'ONLINE',
+                timer_running: false,
+                timer_start: null,
+                timer_elapsed: 0
             };
             log.info(`🏠 Room created: ${code}`);
+        } else {
+            // Se já existe, garante que estÃ¡ ONLINE
+            if (roomData.status !== 'ONLINE') {
+                roomData.status = 'ONLINE';
+                // Se estava offline, reinicia o timer
+                roomData.timer_running = false;
+                roomData.timer_start = null;
+                roomData.timer_elapsed = 0;
+                log.info(`🔴 Room ${code} status changed to ONLINE (timer reset)`);
+            }
         }
 
         // Verificar se o jogador já está na sala (reconexão pelo userId)
@@ -101,7 +123,12 @@ export class SocketService {
         socket.emit('room_joined', {
             roomCode: code,
             playerCount: roomData.players.length,
-            mode: isSecret ? 'SECRET' : 'PUBLIC'
+            mode: isSecret ? 'SECRET' : 'PUBLIC',
+            timerState: {
+                running: roomData.timer_running || false,
+                start: roomData.timer_start || null,
+                elapsed: roomData.timer_elapsed || 0
+            }
         });
 
         log.info(`✅ ${nickname} (${isSecret ? 'Secret' : 'Public'}) joined room ${code} — ${roomData.players.length} players`);
@@ -164,6 +191,12 @@ export class SocketService {
         if (roomData) {
             roomData.players = roomData.players.filter((p: Player) => p.id !== socket.id);
             roomData.last_updated = Date.now();
+
+            if (roomData.players.length === 0) {
+                roomData.status = 'OFFLINE';
+                log.info(`⚪ Room ${roomCode} is now OFFLINE (empty)`);
+            }
+
             StorageService.saveRoom(roomCode, roomData);
             log.info(`🏠 Room ${roomCode} now has ${roomData.players.length} players`);
         }
@@ -191,6 +224,12 @@ export class SocketService {
         if (roomData.players.length !== initialCount) {
             log.info(`🧹 Pruned ${initialCount - roomData.players.length} ghost players from room ${roomCode}`);
             roomData.last_updated = Date.now();
+
+            if (roomData.players.length === 0) {
+                roomData.status = 'OFFLINE';
+                log.info(`⚪ Room ${roomCode} is now OFFLINE (empty after pruning)`);
+            }
+
             StorageService.saveRoom(roomCode, roomData);
 
             // Atualizar quem sobrou
@@ -200,5 +239,62 @@ export class SocketService {
                 mode: 'PUBLIC' // Simplificação, idealmente preservaria o modo do user
             });
         }
+    }
+
+    private static async handleTimerToggle(socket: Socket) {
+        // Encontrar sala
+        const mapping = this.socketMap.get(socket.id);
+        if (!mapping) return;
+        const { roomCode } = mapping;
+
+        const roomData = await StorageService.getRoom(roomCode);
+        if (!roomData) return;
+
+        const now = Date.now();
+
+        if (roomData.timer_running) {
+            // PAUSE
+            // Somar tempo decorrido ao elapsed
+            const diff = now - (roomData.timer_start || now);
+            roomData.timer_elapsed = (roomData.timer_elapsed || 0) + diff;
+            roomData.timer_running = false;
+            roomData.timer_start = null;
+        } else {
+            // PLAY
+            roomData.timer_running = true;
+            roomData.timer_start = now;
+        }
+
+        roomData.last_updated = now;
+        StorageService.saveRoom(roomCode, roomData);
+
+        // Sync com todos
+        this.io.to(roomCode).emit('timer_sync', {
+            running: roomData.timer_running,
+            start: roomData.timer_start,
+            elapsed: roomData.timer_elapsed
+        });
+    }
+
+    private static async handleTimerReset(socket: Socket) {
+        const mapping = this.socketMap.get(socket.id);
+        if (!mapping) return;
+        const { roomCode } = mapping;
+
+        const roomData = await StorageService.getRoom(roomCode);
+        if (!roomData) return;
+
+        roomData.timer_running = false;
+        roomData.timer_start = null;
+        roomData.timer_elapsed = 0;
+        roomData.last_updated = Date.now();
+
+        StorageService.saveRoom(roomCode, roomData);
+
+        this.io.to(roomCode).emit('timer_sync', {
+            running: false,
+            start: null,
+            elapsed: 0
+        });
     }
 }
