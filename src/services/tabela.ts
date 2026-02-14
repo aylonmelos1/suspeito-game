@@ -1,4 +1,4 @@
-import * as tabela from "../../public/table.json"
+import tabela from "../../public/table.json"
 
 export class TabelaService {
     static getTabela() {
