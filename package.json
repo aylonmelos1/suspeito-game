@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/app.js",
-    "dev": "tsx --watch-path src --watch-path public --watch-path .env src/app.ts"
+    "dev": "tsx --watch-path src --watch-path public --watch-path .env src/app.ts",
+    "build": "npx tsc"
   },
   "keywords": [],
   "author": "",
