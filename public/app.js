@@ -315,9 +315,28 @@ const app = {
     },
 
     toggleTimer() {
-        if (!this.socket || !this.currentRoom) return;
         if (navigator.vibrate) navigator.vibrate(20);
-        this.socket.emit('timer_toggle');
+
+        if (this.gameMode === 'offline') {
+            const now = Date.now();
+            if (this.timerState.running) {
+                // PAUSE
+                const diff = now - (this.timerState.start || now);
+                this.timerState.elapsed += diff;
+                this.timerState.running = false;
+                this.timerState.start = null;
+            } else {
+                // PLAY
+                this.timerState.running = true;
+                this.timerState.start = now;
+            }
+            this.syncTimer(this.timerState);
+            this.saveState(); // Persistir estado do timer no offline
+        } else {
+            // Online / Friends
+            if (!this.socket || !this.currentRoom) return;
+            this.socket.emit('timer_toggle');
+        }
     },
 
     startTimer(startTime) {
@@ -376,7 +395,8 @@ const app = {
         store.put({
             id: 'current',
             ...this.state,
-            identity: this.identity
+            identity: this.identity,
+            timerState: this.timerState // Salvar estado do timer
         });
     },
 
@@ -405,6 +425,10 @@ const app = {
                     };
                     if (result.identity) {
                         this.identity = result.identity;
+                    }
+                    if (result.timerState && this.gameMode === 'offline') {
+                        // Restaurar timer no offline
+                        this.syncTimer(result.timerState);
                     }
                 }
                 resolve();
@@ -700,9 +724,13 @@ const app = {
             console.log('[RESET] State resetado:', JSON.stringify(this.state));
             this.emitGameAction('resetou', 'o jogo');
 
-            // Zerar timer se conectado
+            // Zerar timer
             if (this.socket && this.currentRoom) {
                 this.socket.emit('timer_reset');
+            } else {
+                // Offline reset
+                this.timerState = { running: false, start: null, elapsed: 0 };
+                this.syncTimer(this.timerState);
             }
 
             this.saveState();
