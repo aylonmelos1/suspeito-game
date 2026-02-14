@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b1021">
+    <meta name="description" content="Bloco de notas para o jogo Suspeito">
+    <title>Suspeito Game</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="icon-192.png">
+</head>
+
+<body>
+    <!-- Tela de Lobby / Escolha de Modo -->
+    <div class="lobby-welcome" id="lobby-welcome">
+        <!-- Background decorativo -->
+        <div class="lobby-bg-glow"></div>
+
+        <div class="lobby-inner">
+            <!-- Logo / Título -->
+            <div class="lobby-title-area">
+                <h1 class="lobby-logo">Suspeito</h1>
+                <p class="lobby-subtitle">Descubra o culpado.</p>
+            </div>
+
+            <!-- Cards de Modo -->
+            <div class="lobby-modes">
+                <div class="mode-card" id="mode-friends" onclick="lobby.selectMode('friends')">
+                    <div class="mode-card-icon">👥</div>
+                    <h3>Com Amigos</h3>
+                    <p>Entre numa sala e jogue com outros jogadores em tempo real.</p>
+                    <div class="mode-card-glow"></div>
+                </div>
+
+                <div class="mode-card" id="mode-offline" onclick="lobby.selectMode('offline')">
+                    <div class="mode-card-icon">🎲</div>
+                    <h3>Offline</h3>
+                    <p>Jogue sozinho, sem conexão. Suas anotações ficam no dispositivo.</p>
+                    <div class="mode-card-glow"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popup "Com Amigos" -->
+        <div class="friends-overlay" id="friends-popup">
+            <div class="friends-popup-content">
+                <button class="popup-close-btn" onclick="lobby.closeFriendsPopup()" aria-label="Fechar">✕</button>
+
+                <h2>Entrar na Sala</h2>
+                <p class="popup-desc">Configure sua partida multiplayer</p>
+
+                <div class="popup-form">
+                    <div class="input-group">
+                        <label for="popup-nickname">Seu apelido</label>
+                        <input type="text" id="popup-nickname" placeholder="Ex: Detetive007" maxlength="12"
+                            autocomplete="off">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="popup-room-code">Código da sala</label>
+                        <input type="text" id="popup-room-code" placeholder="Ex: A1B2" maxlength="6" autocomplete="off"
+                            style="text-transform: uppercase;">
+                    </div>
+
+                    <!-- Slider Toggle -->
+                    <div class="slider-toggle-wrapper">
+                        <label class="slider-toggle" id="mode-toggle">
+                            <input type="checkbox" id="spy-mode-checkbox">
+                            <span class="slider-track">
+                                <span class="slider-label-left">Público</span>
+                                <span class="slider-label-right">Spy Mode</span>
+                                <span class="slider-thumb"></span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <button class="btn-join-room" onclick="lobby.joinRoom()">
+                        Entrar na Sala
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de Notificações -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script>
+        const lobby = {
+            selectMode(mode) {
+                if (mode === 'offline') {
+                    localStorage.setItem('suspeito_game_mode', 'offline');
+                    window.location.href = '/app';
+                } else if (mode === 'friends') {
+                    this.openFriendsPopup();
+                }
+            },
+
+            openFriendsPopup() {
+                const popup = document.getElementById('friends-popup');
+                popup.classList.add('visible');
+                // Focus no primeiro input
+                setTimeout(() => {
+                    document.getElementById('popup-nickname').focus();
+                }, 300);
+            },
+
+            closeFriendsPopup() {
+                const popup = document.getElementById('friends-popup');
+                popup.classList.remove('visible');
+            },
+
+            showToast(message, type = 'error') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.textContent = message;
+                container.appendChild(toast);
+                setTimeout(() => {
+                    toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            },
+
+            joinRoom() {
+                const nickname = document.getElementById('popup-nickname').value.trim();
+                const roomCode = document.getElementById('popup-room-code').value.trim().toUpperCase();
+                const isSpyMode = document.getElementById('spy-mode-checkbox').checked;
+
+                if (!nickname) {
+                    this.showToast('Digite seu apelido!');
+                    return;
+                }
+                if (!roomCode || roomCode.length < 3) {
+                    this.showToast('Código da sala inválido!');
+                    return;
+                }
+
+                // Salvar configurações no localStorage para o app.html consumir
+                localStorage.setItem('suspeito_game_mode', 'friends');
+                localStorage.setItem('suspeito_room_code', roomCode);
+                localStorage.setItem('suspeito_nickname', nickname);
+                localStorage.setItem('suspeito_spy_mode', isSpyMode ? 'true' : 'false');
+
+                window.location.href = '/app';
+            }
+        };
+
+        // Se clicar fora do popup, fecha
+        document.getElementById('friends-popup').addEventListener('click', function (e) {
+            if (e.target === this) {
+                lobby.closeFriendsPopup();
+            }
+        });
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registrado!', reg))
+                .catch(err => console.error('Erro SW:', err));
+        }
+    </script>
+</body>
+
+</html>

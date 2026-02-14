@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b1021">
+    <meta name="description" content="Bloco de notas para o jogo Suspeito">
+    <title>Suspeito Game</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="icon-192.png">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header - Palpite Atual -->
+        <header class="guess-header">
+            <h2>Suspeito</h2>
+            <div class="guess-slots">
+                <div class="guess-slot" data-type="suspeito" onclick="app.openSelectionModal('suspeitos')">
+                    <span class="slot-label">Quem?</span>
+                    <span class="slot-value" id="guess-suspeito">?</span>
+                    <span class="slot-icon">👤</span>
+                </div>
+                <div class="guess-slot" data-type="arma" onclick="app.openSelectionModal('arma')">
+                    <span class="slot-label">Com o quê?</span>
+                    <span class="slot-value" id="guess-arma">?</span>
+                    <span class="slot-icon">🔫</span>
+                </div>
+                <div class="guess-slot" data-type="local" onclick="app.openSelectionModal('local')">
+                    <span class="slot-label">Onde?</span>
+                    <span class="slot-value" id="guess-local">?</span>
+                    <span class="slot-icon">📍</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Listas de Itens -->
+        <main id="game-lists">
+            <!-- As listas serão geradas via JS -->
+            <section class="category-section" id="section-suspeitos">
+                <h3>Suspeitos</h3>
+                <div class="items-grid" id="list-suspeitos"></div>
+            </section>
+
+            <section class="category-section" id="section-armas">
+                <h3>Armas</h3>
+                <div class="items-grid" id="list-arma"></div>
+            </section>
+
+            <section class="category-section" id="section-locais">
+                <h3>Locais</h3>
+                <div class="items-grid" id="list-local"></div>
+            </section>
+        </main>
+
+        <!-- Botão Menu (Hamburger) -->
+        <button class="sidebar-toggle-btn" id="sidebar-toggle" onclick="app.toggleSidebar()">
+            <span class="hamburger-icon">
+                <span></span><span></span><span></span>
+            </span>
+        </button>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-inner">
+                <div class="sidebar-header">
+                    <h3>Menu</h3>
+                    <button class="sidebar-close" onclick="app.toggleSidebar()">✕</button>
+                </div>
+
+                <!-- Ações -->
+                <div class="sidebar-section">
+                    <h4>Ações</h4>
+                    <div class="sidebar-actions">
+                        <button id="btn-leave" class="sidebar-btn danger hidden" onclick="app.leaveRoom()">
+                            <span class="sidebar-btn-icon">🚪</span> Sair da Sala
+                        </button>
+                        <button id="btn-reset" class="sidebar-btn warning" onclick="app.resetGame()">
+                            <span class="sidebar-btn-icon">🔄</span> Nova Partida
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log de Atividades -->
+                <div class="sidebar-section">
+                    <h4>Atividades</h4>
+                    <div class="activity-log" id="activity-log">
+                        <p class="activity-empty">Nenhuma atividade ainda...</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay da Sidebar -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
+
+        <!-- Container de Notificações -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- Modal de Seleção -->
+        <div id="selection-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="modal-title">Selecionar</h3>
+                <div id="modal-list" class="modal-list"></div>
+                <button class="modal-close" onclick="app.closeModal()">Fechar</button>
+            </div>
+        </div>
+
+        <!-- Modal Customizado (Confirm / Alert) -->
+        <div id="custom-modal-overlay" class="custom-modal-overlay">
+            <div class="custom-modal-box">
+                <p id="custom-modal-message" class="custom-modal-message"></p>
+                <div class="custom-modal-buttons">
+                    <button id="custom-modal-cancel" class="custom-modal-btn cancel">Cancelar</button>
+                    <button id="custom-modal-confirm" class="custom-modal-btn confirm">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script src="app.js?v=2"></script>
+        <script>
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => {
+                        console.log('SW registrado!', reg);
+                        // Forçar update imediato se houver nova versão
+                        reg.update();
+                    })
+                    .catch(err => console.error('Erro SW:', err));
+            }
+        </script>
+</body>
+
+</html>

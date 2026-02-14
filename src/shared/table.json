@@ -1,0 +1,34 @@
+{
+    "name": "Lista de Elementos do Jogo",
+    "tipo": "ArrayList",
+    "suspeitos": [
+        "Motorista",
+        "Empregada",
+        "Mordomo",
+        "Cozinheiro",
+        "Esposa",
+        "Jardineiro",
+        "Vizinho"
+    ],
+    "arma": [
+        "Veneno",
+        "Abajur",
+        "Revolver",
+        "Faca",
+        "Tesoura de Poda",
+        "Chave de Boca",
+        "Martelo"
+    ],
+    "local": [
+        "Varanda",
+        "Escritório",
+        "Hall Central",
+        "Biblioteca",
+        "Sala de Jantar",
+        "Cozinha",
+        "Banheiro",
+        "Suíte",
+        "Quarto",
+        "Escadaria"
+    ]
+}

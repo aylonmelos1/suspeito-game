@@ -1,0 +1,7 @@
+// Dependencias
+node_modules/
+dist/
+
+// Ambiente
+.env
+*.sqlite
