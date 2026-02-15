@@ -120,7 +120,7 @@ const app = {
 
                 // Garantir que identity existe
                 if (!this.identity.userId) {
-                    this.identity.userId = crypto.randomUUID();
+                    this.identity.userId = (crypto.randomUUID ? crypto.randomUUID() : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)));
                     console.log('[INIT] Novo userId gerado:', this.identity.userId);
                     this.saveState();
                 }
@@ -266,6 +266,7 @@ const app = {
         this.socket.on('room_joined', (data) => {
             console.log('[SOCKET] Entrou na sala:', data);
             this.currentRoom = data.roomCode;
+            this.updateRoomInfo(data.roomCode);
 
             if (data.timerState) {
                 this.syncTimer(data.timerState);
@@ -623,6 +624,42 @@ const app = {
         } else {
             sidebar.classList.add('open');
             overlay.classList.add('visible');
+        }
+    },
+
+    updateRoomInfo(roomCode) {
+        const section = document.getElementById('room-info-section');
+        const valueEl = document.getElementById('room-id-value');
+        if (section && valueEl && roomCode) {
+            valueEl.textContent = roomCode;
+            section.classList.remove('hidden');
+        }
+    },
+
+    async copyRoomId() {
+        const roomCode = this.currentRoom;
+        if (!roomCode) return;
+
+        try {
+            await navigator.clipboard.writeText(roomCode);
+            this.showToast('ID da sala copiado!', 'success');
+            if (navigator.vibrate) navigator.vibrate(10);
+
+            // Feedback visual no botão
+            const btn = document.getElementById('room-id-copy');
+            if (btn) {
+                btn.textContent = '✅';
+                setTimeout(() => { btn.textContent = '📋'; }, 1500);
+            }
+        } catch (e) {
+            // Fallback para navegadores que não suportam clipboard API
+            const text = document.createElement('textarea');
+            text.value = roomCode;
+            document.body.appendChild(text);
+            text.select();
+            document.execCommand('copy');
+            document.body.removeChild(text);
+            this.showToast('ID da sala copiado!', 'success');
         }
     },
 

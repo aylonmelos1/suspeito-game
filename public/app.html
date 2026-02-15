@@ -71,6 +71,19 @@
                     <button class="sidebar-close" onclick="app.toggleSidebar()">✕</button>
                 </div>
 
+                <!-- Info da Sala -->
+                <div class="sidebar-section hidden" id="room-info-section">
+                    <h4>Sala</h4>
+                    <div class="room-id-display">
+                        <span class="room-id-label">ID da Sala</span>
+                        <div class="room-id-value-wrapper">
+                            <span class="room-id-value" id="room-id-value">—</span>
+                            <button class="room-id-copy-btn" id="room-id-copy" onclick="app.copyRoomId()"
+                                title="Copiar ID">📋</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Ações -->
                 <div class="sidebar-section">
                     <h4>Ações</h4>

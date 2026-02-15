@@ -825,6 +825,57 @@ main#game-lists {
     font-weight: 600;
 }
 
+/* Room ID Display */
+.room-id-display {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.room-id-label {
+    font-size: 0.75rem;
+    color: #6b7a99;
+    letter-spacing: 0.5px;
+}
+
+.room-id-value-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(212, 175, 55, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.room-id-value {
+    flex: 1;
+    font-family: 'Inter', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    user-select: all;
+}
+
+.room-id-copy-btn {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.room-id-copy-btn:active {
+    transform: scale(0.9);
+    background: rgba(212, 175, 55, 0.1);
+    border-color: var(--gold);
+}
+
 /* Sidebar Buttons */
 .sidebar-actions {
     display: flex;
