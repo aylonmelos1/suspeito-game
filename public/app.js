@@ -830,6 +830,55 @@ const app = {
         `).join('');
     },
 
+    async checkForUpdates() {
+        console.log('[UPDATE] Verificando atualizações...');
+        const btn = document.querySelector('button[onclick="app.checkForUpdates()"]');
+        const icon = btn ? btn.querySelector('.sidebar-btn-icon') : null;
+
+        // Feedback visual
+        if (icon) icon.classList.add('spinning');
+        this.showToast('Verificando atualizações...', 'info');
+
+        try {
+            // 1. Force fetch of version para testar conexão
+            const response = await fetch('/api/version?t=' + Date.now(), { cache: 'no-store' });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[UPDATE] Server version:', data.version);
+            }
+
+            // 2. Unregister SW
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.unregister();
+                    console.log('[UPDATE] SW Desregistrado');
+                }
+            }
+
+            // 3. Clear Caches
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                for (const key of keys) {
+                    await caches.delete(key);
+                    console.log('[UPDATE] Cache deletado:', key);
+                }
+            }
+
+            this.showToast('Atualizando app...', 'success');
+
+            // 4. Reload smoothly
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
+        } catch (e) {
+            console.error('[UPDATE] Erro:', e);
+            this.showToast('Erro ao atualizar. Verifique sua conexão.', 'error');
+            if (icon) icon.classList.remove('spinning');
+        }
+    },
+
     async leaveRoom() {
         console.log('[LEAVE] Tentando sair da sala...');
         const confirmed = await customConfirm('Deseja sair da sala?', 'Sair', 'Cancelar');

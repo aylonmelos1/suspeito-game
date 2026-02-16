@@ -1427,3 +1427,15 @@ main#game-lists {
     transform: translateY(-1px) scale(0.98);
     box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
+
+/* Utilities */
+.spinning {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
