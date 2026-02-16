@@ -266,6 +266,12 @@ const app = {
         this.socket.on('notification', (data) => {
             console.log('[SOCKET] Notificação:', data);
             this.showToast(data.message, data.type);
+
+            // Adicionar à sidebar se for um evento relevante (tem type)
+            if (data.type && (data.type.startsWith('guess-') || data.type === 'game_event')) {
+                this.addActivity(data.type, data.message);
+            }
+
             if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
         });
 
@@ -886,7 +892,10 @@ const app = {
             unsuspect: '⚪',
             reset: '🔄',
             join: '🟢',
-            leave: '🟠'
+            leave: '🟠',
+            'guess-normal': '💬',
+            'guess-final': '🏆',
+            'game_event': '📢'
         };
 
         const labels = {
@@ -898,15 +907,19 @@ const app = {
             unsuspect: 'Removeu destaque de',
             reset: 'Resetou o jogo',
             join: 'Entrou na sala',
-            leave: 'Saiu da sala'
+            leave: 'Saiu da sala',
+            'guess-normal': '', // Label vazio pois a mensagem já contém o contexto
+            'guess-final': '',
+            'game_event': ''
         };
 
         const now = new Date();
         const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
         this.activityLog.unshift({
+            type, // Guardar tipo para CSS
             icon: icons[type] || '•',
-            label: labels[type] || type,
+            label: labels[type] !== undefined ? labels[type] : type,
             detail: detail || '',
             time
         });
@@ -927,10 +940,10 @@ const app = {
         }
 
         container.innerHTML = this.activityLog.map(entry => `
-            <div class="activity-item">
+            <div class="activity-item ${entry.type || ''}">
                 <span class="activity-icon">${entry.icon}</span>
                 <div class="activity-text">
-                    <strong>${entry.label}</strong> ${entry.detail}
+                    ${entry.label ? `<strong>${entry.label}</strong> ` : ''}${entry.detail}
                     <span class="activity-time">${entry.time}</span>
                 </div>
             </div>
