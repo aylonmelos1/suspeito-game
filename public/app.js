@@ -784,7 +784,9 @@ const app = {
             });
         }
 
-        modal.classList.add('visible');
+        modal.style.display = 'flex';
+        // Pequeno delay para permitir renderização antes da transição CSS
+        requestAnimationFrame(() => modal.classList.add('visible'));
     },
 
     closeModal(modalId = 'selection-modal') {
