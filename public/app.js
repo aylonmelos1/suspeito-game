@@ -350,11 +350,12 @@ const app = {
         // Deprecated in favor of syncTimer
     },
 
-    emitGameAction(action, detail) {
+    emitGameAction(action, detail, style = null) {
         if (this.socket && this.currentRoom) {
             this.socket.emit('game_action', {
                 action,
-                detail
+                detail,
+                style
             });
         }
     },
@@ -696,10 +697,18 @@ const app = {
 
         if (value) {
             this.addActivity('guess', `${value} (${type})`);
-            this.emitGameAction(this.getGenericAction('suspicion'), '');
+
+            // Envia ação com estilo visual para os outros
+            const toastType = 'guess-' + stateKey;
+            this.emitGameAction(this.getGenericAction('suspicion'), '', toastType);
+
+            // Premium toast
+            this.showToast(value, toastType);
+
         } else {
             this.addActivity('unguess', type);
             this.emitGameAction(this.getGenericAction('removeSuspicion'), '');
+            this.showToast('Palpite removido', 'info');
         }
 
         this.state.guesses[stateKey] = value;

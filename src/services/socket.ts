@@ -134,7 +134,7 @@ export class SocketService {
         log.info(`✅ ${nickname} (${isSecret ? 'Secret' : 'Public'}) joined room ${code} — ${roomData.players.length} players`);
     }
 
-    private static async handleGameAction(socket: Socket, data: { action: string, detail: string }) {
+    private static async handleGameAction(socket: Socket, data: { action: string, detail: string, style?: string }) {
         const rooms = Array.from(socket.rooms);
         const gameRoomCode = rooms.find(r => r !== socket.id);
 
@@ -156,12 +156,12 @@ export class SocketService {
             return;
         }
 
-        log.debug(`🎮 Action in ${gameRoomCode}: ${player.nickname} ${data.action} ${data.detail}`);
+        log.debug(`🎮 Action in ${gameRoomCode}: ${player.nickname} ${data.action} ${data.detail} [style: ${data.style || 'default'}]`);
 
         if (!player.isSecret) {
             socket.to(gameRoomCode).emit('notification', {
                 message: `${player.nickname} ${data.action} ${data.detail}`,
-                type: 'game_event'
+                type: data.style || 'game_event'
             });
         } else {
             log.debug(`🕵️ Secret action by ${player.nickname} ignored for broadcast`);
