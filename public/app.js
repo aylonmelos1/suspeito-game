@@ -479,11 +479,19 @@ const app = {
                 el.classList.add('selected-guess');
             }
 
-            // --- Long Press Detection ---
+            // --- Long Press Detection (compatível com Samsung) ---
+            let _startX = 0;
+            let _startY = 0;
+
             const startPress = (e) => {
-                // Prevenir seleção de texto no long press
-                e.preventDefault();
                 this._longPressTriggered = false;
+
+                // Guardar posição inicial do toque
+                if (e.touches && e.touches.length > 0) {
+                    _startX = e.touches[0].clientX;
+                    _startY = e.touches[0].clientY;
+                }
+
                 this._longPressTimer = setTimeout(() => {
                     this._longPressTriggered = true;
                     this.toggleSuspected(item);
@@ -491,10 +499,22 @@ const app = {
             };
 
             const endPress = (e) => {
+                e.preventDefault(); // Evita que o Samsung dispare click fantasma
                 clearTimeout(this._longPressTimer);
                 if (!this._longPressTriggered) {
                     // Foi toque curto
                     this.toggleItem(item);
+                }
+            };
+
+            const movePress = (e) => {
+                // Cancelar long press se moveu mais de 10px (scroll)
+                if (e.touches && e.touches.length > 0) {
+                    const dx = Math.abs(e.touches[0].clientX - _startX);
+                    const dy = Math.abs(e.touches[0].clientY - _startY);
+                    if (dx > 10 || dy > 10) {
+                        clearTimeout(this._longPressTimer);
+                    }
                 }
             };
 
@@ -503,9 +523,9 @@ const app = {
             };
 
             // Touch events (mobile)
-            el.addEventListener('touchstart', startPress, { passive: false });
+            el.addEventListener('touchstart', startPress, { passive: true });
             el.addEventListener('touchend', endPress);
-            el.addEventListener('touchmove', cancelPress);
+            el.addEventListener('touchmove', movePress, { passive: true });
             el.addEventListener('touchcancel', cancelPress);
 
             // Mouse events (desktop)
@@ -821,6 +841,38 @@ const app = {
 
         console.log('[LEAVE] Redirecionando para /...');
         window.location.href = '/';
+    },
+
+    async clearMarks() {
+        const confirmed = await customConfirm(
+            'Limpar todas as marcações e palpites?',
+            'Limpar',
+            'Cancelar'
+        );
+        if (!confirmed) return;
+
+        if (navigator.vibrate) navigator.vibrate(30);
+
+        this.state = {
+            eliminated: {},
+            suspected: {},
+            guesses: { suspeito: null, arma: null, local: null }
+        };
+
+        // Zerar timer
+        if (this.socket && this.currentRoom) {
+            this.socket.emit('timer_reset');
+        } else {
+            this.timerState = { running: false, start: null, elapsed: 0 };
+            this.syncTimer(this.timerState);
+        }
+
+        this.saveState();
+        this.render();
+        this.updateHeader();
+        this.addActivity('reset', 'Marcações limpas');
+        this.toggleSidebar();
+        this.showToast('Marcações limpas!', 'success');
     },
 
     async resetGame() {
