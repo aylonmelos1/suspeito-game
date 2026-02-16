@@ -37,6 +37,11 @@
             </div>
         </header>
 
+        <!-- Botão Registrar Palpite -->
+        <button class="guess-register-btn" onclick="app.openGuessModal()">
+            <span class="icon">📝</span> Registrar Palpite
+        </button>
+
         <!-- Listas de Itens -->
         <main id="game-lists">
             <!-- As listas serão geradas via JS -->
@@ -112,6 +117,53 @@
                 </div>
             </div>
         </aside>
+
+        <!-- Modal de Palpite -->
+        <div id="guess-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Registrar Palpite</h2>
+                    <button class="close-btn" onclick="app.closeModal('guess-modal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Selecione os itens para compor seu
+                        palpite:</p>
+
+                    <div class="guess-inputs">
+                        <div class="guess-input-group">
+                            <label>Suspeito</label>
+                            <button id="modal-guess-suspeito" class="guess-selector"
+                                onclick="app.openSelectionModal('suspeitos', true)">
+                                Selecionar...
+                            </button>
+                        </div>
+                        <div class="guess-input-group">
+                            <label>Arma</label>
+                            <button id="modal-guess-arma" class="guess-selector"
+                                onclick="app.openSelectionModal('armas', true)">
+                                Selecionar...
+                            </button>
+                        </div>
+                        <div class="guess-input-group">
+                            <label>Local</label>
+                            <button id="modal-guess-local" class="guess-selector"
+                                onclick="app.openSelectionModal('locais', true)">
+                                Selecionar...
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions" style="margin-top: 1.5rem;">
+                        <button class="action-btn secondary" onclick="app.submitGuess(false)">
+                            💬 Palpite Normal (Suspeita)
+                        </button>
+                        <button class="action-btn warning" onclick="app.submitGuess(true)">
+                            🏆 Palpite Final (Acusação)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Overlay da Sidebar -->
         <div class="sidebar-overlay" id="sidebar-overlay" onclick="app.toggleSidebar()"></div>

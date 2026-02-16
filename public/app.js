@@ -645,18 +645,122 @@ const app = {
     // Modal Logic
     currentModalType: null,
 
+    // --- Lógica de Palpites (Guess) ---
+
+    // Variáveis temporárias para o modal de palpite
+    tempGuess: { suspeito: null, arma: null, local: null },
+    selectingForGuess: null, // 'suspeito', 'arma', 'local' ou null
+
+    openGuessModal() {
+        if (navigator.vibrate) navigator.vibrate(30);
+
+        // Copiar estado atual ou iniciar vazio
+        this.tempGuess = { ...this.state.guesses };
+
+        this.updateGuessModalUI();
+        const modal = document.getElementById('guess-modal');
+        modal.style.display = 'flex';
+        // Pequeno delay para permitir renderização antes da transição CSS
+        setTimeout(() => modal.classList.add('visible'), 10);
+    },
+
+    updateGuessModalUI() {
+        const types = ['suspeito', 'arma', 'local'];
+        types.forEach(type => {
+            const btn = document.getElementById(`modal-guess-${type}`);
+            const value = this.tempGuess[type];
+
+            if (value) {
+                btn.textContent = value;
+                btn.classList.add('filled');
+            } else {
+                btn.textContent = 'Selecionar...';
+                btn.classList.remove('filled');
+            }
+        });
+    },
+
+    openGuessSelection(type) {
+        // Mapeia singular para plural (usado nas listas)
+        const pluralMap = {
+            'suspeito': 'suspeitos',
+            'arma': 'armas',
+            'local': 'locais'
+        };
+
+        this.selectingForGuess = type;
+        this.openSelectionModal(pluralMap[type]);
+    },
+
+    // Sobrescrevendo/Adaptando selectItem para lidar com palpites
+    handleItemSelection(value, type) {
+        // Se estamos selecionando para o modal de palpite
+        if (this.selectingForGuess) {
+            this.tempGuess[this.selectingForGuess] = value;
+            this.updateGuessModalUI();
+            this.closeModal('selection-modal');
+            this.selectingForGuess = null;
+            return;
+        }
+
+        // Comportamento normal (header do jogo)
+        this.setGuess(type, value);
+        this.closeModal('selection-modal');
+    },
+
+    submitGuess(isFinal) {
+        const { suspeito, arma, local } = this.tempGuess;
+
+        if (!suspeito || !arma || !local) {
+            this.showToast('Selecione todos os itens para o palpite!', 'error');
+            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+            return;
+        }
+
+        const guessText = `${suspeito} com ${arma} em ${local}`;
+        const style = isFinal ? 'guess-final' : 'guess-normal';
+        const actionPrefix = isFinal ? '🏆 ACUSAÇÃO FINAL:' : '💬 Palpite:';
+
+        // Enviar ação
+        this.emitGameAction(actionPrefix, guessText, style);
+
+        // Adicionar atividade localmente também
+        this.addActivity(style, `${actionPrefix} ${guessText}`);
+
+        this.showToast(isFinal ? 'Acusação registrada!' : 'Palpite registrado!', 'success');
+        this.closeModal('guess-modal');
+
+        // Atualizar estado principal também? Sim, sincronizar é bom UX.
+        this.state.guesses = { ...this.tempGuess };
+        this.saveState();
+        this.updateHeader();
+    },
+
+    // --- Fim Lógica de Palpites ---
+
     openSelectionModal(type) {
         if (navigator.vibrate) navigator.vibrate(15);
         this.currentModalType = type;
 
         let jsonKey = type;
-        if (type === 'suspeito') jsonKey = 'suspeitos';
+        // Normalização de chaves para acessar this.data (conforme table.json)
+        if (type === 'suspeito') jsonKey = 'suspeitos'; // Vem do header (singular) -> JSON (plural)
+
+        // Ajustes para chamadas vindas do Modal de Palpite (que usam plural)
+        if (type === 'armas') jsonKey = 'arma'; // JSON usa 'arma' (singular)
+        if (type === 'locais') jsonKey = 'local'; // JSON usa 'local' (singular)
 
         const modal = document.getElementById('selection-modal');
         const listContainer = document.getElementById('modal-list');
         const title = document.getElementById('modal-title');
 
-        title.textContent = `Escolher ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+        // Formatar título bonito
+        let displayTitle = type;
+        if (type === 'suspeitos') displayTitle = 'Suspeito';
+        if (type === 'armas') displayTitle = 'Arma';
+        if (type === 'locais') displayTitle = 'Local';
+
+        title.textContent = `Escolher ${displayTitle.charAt(0).toUpperCase() + displayTitle.slice(1)}`;
         listContainer.innerHTML = '';
 
         const noneBtn = document.createElement('div');
@@ -664,8 +768,7 @@ const app = {
         noneBtn.textContent = '--- Remover Seleção ---';
         noneBtn.style.color = '#8a9bbd';
         noneBtn.onclick = () => {
-            this.setGuess(type, null);
-            this.closeModal();
+            this.handleItemSelection(null, type);
         };
         listContainer.appendChild(noneBtn);
 
@@ -675,8 +778,7 @@ const app = {
                 el.className = 'modal-item';
                 el.textContent = item;
                 el.onclick = () => {
-                    this.setGuess(type, item);
-                    this.closeModal();
+                    this.handleItemSelection(item, type);
                 };
                 listContainer.appendChild(el);
             });
@@ -685,9 +787,12 @@ const app = {
         modal.classList.add('visible');
     },
 
-    closeModal() {
-        document.getElementById('selection-modal').classList.remove('visible');
-        this.currentModalType = null;
+    closeModal(modalId = 'selection-modal') {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('visible');
+            modal.style.display = 'none'; // Fallback para modals que usam display none
+        }
     },
 
     setGuess(type, value) {
