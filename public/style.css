@@ -682,6 +682,36 @@ main#game-lists {
     font-weight: 600;
 }
 
+.item-card.suspected {
+    background: rgba(138, 43, 226, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 14px rgba(138, 43, 226, 0.2);
+    color: #d8b4fe;
+    font-weight: 500;
+    text-decoration: none;
+    opacity: 1;
+    animation: suspectedPulse 2s ease-in-out infinite;
+}
+
+@keyframes suspectedPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 14px rgba(138, 43, 226, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(138, 43, 226, 0.35);
+    }
+}
+
+/* Long press visual: impedir que :active fique preso */
+.item-card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* ===================================== */
 /*         SIDEBAR                       */
 /* ===================================== */

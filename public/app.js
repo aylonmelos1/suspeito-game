@@ -67,12 +67,18 @@ const app = {
     data: null, // table.json content
     state: {
         eliminated: {}, // { "Nome do Item": true }
+        suspected: {}, // { "Nome do Item": true } - itens destacados em roxo
         guesses: {
             suspeito: null,
             arma: null,
             local: null
         }
     },
+
+    // Long Press
+    _longPressTimer: null,
+    _longPressTriggered: false,
+    LONG_PRESS_DURATION: 500, // ms
 
     // Socket.io
     socket: null,
@@ -396,6 +402,7 @@ const app = {
         store.put({
             id: 'current',
             ...this.state,
+            suspected: this.state.suspected || {},
             identity: this.identity,
             timerState: this.timerState // Salvar estado do timer
         });
@@ -422,6 +429,7 @@ const app = {
 
                     this.state = {
                         eliminated: result.eliminated || {},
+                        suspected: result.suspected || {},
                         guesses
                     };
                     if (result.identity) {
@@ -463,11 +471,51 @@ const app = {
                 el.classList.add('eliminated');
             }
 
+            if (this.state.suspected[item]) {
+                el.classList.add('suspected');
+            }
+
             if (this.isGuess(item)) {
                 el.classList.add('selected-guess');
             }
 
-            el.onclick = () => this.toggleItem(item);
+            // --- Long Press Detection ---
+            const startPress = (e) => {
+                // Prevenir seleção de texto no long press
+                e.preventDefault();
+                this._longPressTriggered = false;
+                this._longPressTimer = setTimeout(() => {
+                    this._longPressTriggered = true;
+                    this.toggleSuspected(item);
+                }, this.LONG_PRESS_DURATION);
+            };
+
+            const endPress = (e) => {
+                clearTimeout(this._longPressTimer);
+                if (!this._longPressTriggered) {
+                    // Foi toque curto
+                    this.toggleItem(item);
+                }
+            };
+
+            const cancelPress = () => {
+                clearTimeout(this._longPressTimer);
+            };
+
+            // Touch events (mobile)
+            el.addEventListener('touchstart', startPress, { passive: false });
+            el.addEventListener('touchend', endPress);
+            el.addEventListener('touchmove', cancelPress);
+            el.addEventListener('touchcancel', cancelPress);
+
+            // Mouse events (desktop)
+            el.addEventListener('mousedown', startPress);
+            el.addEventListener('mouseup', endPress);
+            el.addEventListener('mouseleave', cancelPress);
+
+            // Desabilitar context menu no long press
+            el.addEventListener('contextmenu', (e) => e.preventDefault());
+
             container.appendChild(el);
         });
     },
@@ -502,9 +550,38 @@ const app = {
         return list[Math.floor(Math.random() * list.length)];
     },
 
+    toggleSuspected(item) {
+        console.log('[SUSPECTED] Item:', item, '| Suspeito?', !!this.state.suspected[item]);
+        if (navigator.vibrate) navigator.vibrate([15, 50, 15]);
+
+        if (this.state.suspected[item]) {
+            // Remover destaque roxo
+            delete this.state.suspected[item];
+            this.addActivity('unsuspect', item);
+        } else {
+            // Adicionar destaque roxo e remover eliminação se existir
+            this.state.suspected[item] = true;
+            if (this.state.eliminated[item]) {
+                delete this.state.eliminated[item];
+            }
+            this.addActivity('suspect', item);
+        }
+        this.saveState();
+        this.render();
+    },
+
     toggleItem(item) {
         console.log('[TOGGLE] Item:', item, '| Eliminado?', !!this.state.eliminated[item]);
         if (navigator.vibrate) navigator.vibrate(10);
+
+        // Se o item está suspected (roxo), toque curto remove o suspected
+        if (this.state.suspected[item]) {
+            delete this.state.suspected[item];
+            this.addActivity('unsuspect', item);
+            this.saveState();
+            this.render();
+            return;
+        }
 
         if (this.state.eliminated[item]) {
             delete this.state.eliminated[item];
@@ -669,6 +746,8 @@ const app = {
             restore: '✅',
             guess: '🔍',
             unguess: '✖️',
+            suspect: '🟣',
+            unsuspect: '⚪',
             reset: '🔄',
             join: '🟢',
             leave: '🟠'
@@ -679,6 +758,8 @@ const app = {
             restore: 'Restaurou',
             guess: 'Suspeita de',
             unguess: 'Removeu suspeita de',
+            suspect: 'Destacou',
+            unsuspect: 'Removeu destaque de',
             reset: 'Resetou o jogo',
             join: 'Entrou na sala',
             leave: 'Saiu da sala'
@@ -756,6 +837,7 @@ const app = {
             if (navigator.vibrate) navigator.vibrate(50);
             this.state = {
                 eliminated: {},
+                suspected: {},
                 guesses: { suspeito: null, arma: null, local: null }
             };
             console.log('[RESET] State resetado:', JSON.stringify(this.state));
